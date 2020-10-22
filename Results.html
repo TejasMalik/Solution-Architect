@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<!-- saved from url=(0156)https://awsacademy.contentcontroller.com/vault/c1f8bc66-94ff-4f55-8477-7dd73a88d025/courses/f56ecddf-56e0-4129-b1eb-a941d327c3b0/0/story_content/report.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <!-- saved from url=(0014)about:internet -->
+  
+  <title>Results</title>
+  <style>
+
+    body {
+      font-family: arial;
+      text-align: center;
+      font-size:10pt;
+    }
+
+    table {
+      border: 1px outset grey;
+    }
+
+    td, th {
+      border: 1px inset grey;
+    }
+
+    table.summary {
+      width: 600px;
+    }
+
+    table.questions  {
+      width: 100%;
+    }
+
+    td {
+      width: 12.5%;
+    }
+
+    th, h3 {
+      font-size:12pt;
+    }
+
+    h1, h2 {
+      font-size:14pt;
+    }
+
+    .correct {
+      color: #008800;
+    }
+
+    .incorrect {
+      color: #880000;
+    }
+
+    .neutral {
+      color: #000088;
+    }
+
+    .question {
+      text-align: left;
+      width: 46.25%;
+    }
+
+    .number {
+      font-size:10pt;
+      width: 3.75%;
+    }
+
+    .datetime {
+      font-size:10pt;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+
+  </style>
+<script>
+
+var strings = {}
+try {
+  strings = {
+    months: [
+      __MONTH_JAN__,
+      __MONTH_FEB__,
+      __MONTH_MAR__,
+      __MONTH_APR__,
+      __MONTH_MAY__,
+      __MONTH_JUN__,
+      __MONTH_JUL__,
+      __MONTH_AUG__,
+      __MONTH_SEP__,
+      __MONTH_OCT__,
+      __MONTH_NOV__,
+      __MONTH_DEC__
+    ],
+    dateTime: __DATE_TIME__,
+    studentScore: __STUDENT_SCORE__,
+    passScore: __PASSING_SCORE__,
+    courseResult: __COURSE_RESULT__,
+    question: __QUESTION__,
+    correctAnswer: __CORRECT_ANS__,
+    quizResult: __QUIZ_RESULT__,
+    studentAnswer: __STUDENT_ANS__,
+    pointsAwarded: __POINTS_AWARD__,
+    neutral: __NEUTRAL__,
+    correct: __CORRECT__,
+    incorrect: __INCORRECT__
+  };
+} catch (e) {
+  strings = {
+    months: [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ],
+    dateTime: 'Date / Time',
+    studentScore: 'Student Score',
+    passingScore: 'Passing Score',
+    courseResult: 'Result',
+
+    question: 'Question',
+    correctAnswer: 'Correct Answer',
+    quizResult: 'Result',
+    studentAnswer: 'Student Answer',
+    pointsAwarded: 'Points Awarded',
+    neutral: 'Neutral',
+    correct: 'Correct',
+    incorrect: 'Incorrect'
+  };
+}
+
+function setupPrint(data) {
+  var courseResults = data.g_oContentResults,
+      quizzes = data.g_listQuizzes,
+      printOptions = data.g_oPrintOptions,
+      quizOrder = printOptions.arrQuizzes,
+      mainQuiz = quizzes[printOptions.strMainQuizId];
+
+  // turn date back into date object
+  courseResults.dtmFinished = new Date(JSON.parse(courseResults.dtmFinished));
+
+  function displayHeader() {
+    var header = document.getElementById('header'),
+        userName = printOptions.strName
+        config = {
+          elName: 'div',
+          children: [
+            { elName: 'h1', text: mainQuiz.strQuizName},
+            { elName: 'h2', text: userName, enabled: userName != null && userName.length > 0},
+          ]
+        };
+
+    header.appendChild(createElFromDef(config));
+  }
+
+  function displayCourseSummary() {
+    var survey = printOptions.bSurvey,
+        showUserScore = !survey && printOptions.bShowUserScore,
+        showPassingScore = !survey && printOptions.bShowPassingScore,
+        showPassFail = !survey && printOptions.bShowShowPassFail,
+        studentScore = Number(mainQuiz.nPtScore),
+        passingScore = Number(mainQuiz.nPassingScore),
+        courseResult = (studentScore >= passingScore) ? 'Pass' : 'Fail',
+        currentDateTime = formatDate(courseResults.dtmFinished),
+        courseSummary = document.getElementById('courseSummary'),
+        config = {
+          elName: 'table',
+          attrs: [{ name: 'class', value: 'summary' }, { name: 'align', value: 'center' }],
+          children: [
+            { elName: 'tr',
+              children: [
+                { elName: 'th', text: strings.dateTime},
+                { elName: 'th', text: strings.studentScore, enabled: showUserScore},
+                { elName: 'th', text: strings.passingScore, enabled: showPassingScore},
+                { elName: 'th', text: strings.courseResult, enabled: showPassFail}
+            ]},
+            { elName: 'tr',
+              children: [
+                { elName: 'td',
+                  children: [
+                    { elName: 'p', attrs: [{ name: 'class', value:'datetime' }], text: currentDateTime.date },
+                    { elName: 'p', attrs: [{ name: 'class', value:'datetime' }], text: currentDateTime.time }
+                ]},
+                { elName: 'td', text: studentScore, enabled: showUserScore },
+                { elName: 'td', text: passingScore, enabled: showPassingScore },
+                { elName: 'td', text: courseResult, enabled: showPassFail }
+            ]}
+          ]
+        };
+
+    courseSummary.appendChild(createElFromDef(config));
+  }
+
+  function displayQuizResults() {
+    for (var i = 0; i < quizOrder.length; i++) {
+      var quizId = quizOrder[i];
+      displayQuizResult(quizId);
+    }
+  };
+
+  function displayQuizResult(quizId) {
+    var i, resultsTable;
+        quiz = quizzes[quizId],
+        questionOrder = getQuestionOrder(quiz),
+        quizDiv = createQuizDiv(quiz),
+        quizReview = document.getElementById('quizReview');
+
+
+    quizReview.appendChild(quizDiv);
+    resultsTable = document.getElementById([ 'results-', quizId ].join(''));
+
+    for (i = 0; i < questionOrder.length; i++) {
+      var config = getQuestionConfig(quiz, questionOrder[i]);
+      resultsTable.appendChild(createElFromDef(config));
+    }
+  };
+
+  function createQuizDiv(quiz) {
+    var survey = printOptions.bSurvey;
+
+    return createElFromDef({
+      elName: 'div',
+      children: [
+        { elName: 'h3', text: quiz.strQuizName },
+        { elName: 'table',
+          attrs: [
+            { name: 'class', value: 'questions' },
+            { name: 'id', value: [ 'results-', quiz.strQuizId ].join('') }
+          ],
+          children: [
+            { elName: 'tr', children: [
+              { elName: 'th', text: '#' },
+              { elName: 'th', text: strings.question },
+              { elName: 'th', text: strings.correctAnswer, enabled: !survey},
+              { elName: 'th', text: strings.studentAnswer },
+              { elName: 'th', text: strings.quizResult, enabled: !survey },
+              { elName: 'th', text: strings.pointsAwarded, enabled: !survey }
+          ]}
+        ]}
+      ]
+    });
+  };
+
+  function createElFromDef(elDef) {
+    if (elDef.enabled === false) {
+      return null;
+    }
+
+    var el = createAndInitElement(elDef.elName, elDef.attrs, elDef.text);
+
+    if (elDef.children != null) {
+      for (var i = 0; i < elDef.children.length; i++) {
+        currEl = createElFromDef(elDef.children[i]);
+        if (currEl != null) {
+          el.appendChild(currEl);
+        }
+      }
+    }
+
+    return el;
+  };
+
+  function createAndInitElement(elementName, attrs, text) {
+    var el = document.createElement(elementName);
+
+    if (attrs != null) {
+      for (var i = 0; i < attrs.length; i++) {
+        var attr = attrs[i];
+        el.setAttribute(attr.name, attr.value);
+      }
+    }
+
+    if (text != null) {
+      el.appendChild(document.createTextNode(text));
+    }
+
+    return el;
+  };
+
+  function getQuestionOrder(quiz) {
+    var i, j,
+        questionOrder = [],
+        questions = quiz.arrQuestions;
+
+    if (questions != null && questions.length > 0)  {
+      // reset
+      if (questions[0].found) {
+        for (var i = 0; i < questions.length; i++) {
+          questions[i].found = false;
+        }
+      }
+
+      for (i = questions.length - 1; i >= 0; i--) {
+        var index = -1,
+            maxQuestionNum = -1,
+            currQuestionNum;
+
+        for (j = 0; j < questions.length; j++) {
+          currQuestionNum = Number(questions[j].nQuestionNumber);
+          if (!questions[j].found && currQuestionNum > maxQuestionNum) {
+            maxQuestionNum = currQuestionNum;
+            if (index >= 0) {
+              questions[index].found = false;
+            }
+            questions[j].found = true;
+            index = j;
+          }
+        }
+        questionOrder[i] = index;
+      }
+    }
+
+    return questionOrder;
+  }
+
+  function getQuestionConfig(quiz, questionIdx) {
+    var questions = quiz.arrQuestions,
+        question = questions[questionIdx],
+        survey = printOptions.bSurvey;
+
+    return {
+      elName: 'tr',
+      children: [
+        { elName: 'td', attrs: [{ name: 'class', value: 'number'}], text: question.nQuestionNumber },
+        { elName: 'td', attrs: [{ name: 'class', value: 'question'}], text: question.strDescription },
+        { elName: 'td', text: formatResponse(question.strCorrectResponse), enabled: !survey},
+        { elName: 'td', text: formatResponse(question.strUserResponse) },
+        { elName: 'td', attrs: [{ name: 'class', value: question.strStatus}], text: strings[question.strStatus], enabled: !survey },
+        { elName: 'td', text: question.nPoints, enabled: !survey }
+      ]
+    };
+  };
+
+  function formatResponse(response) {
+    return (response != null) ? response.replace(/\|#\|/g, ', ') : '&nbsp';
+  }
+
+  function formatDate(dtm) {
+    var hours = dtm.getHours(),
+        period = hours >= 12 ? 'pm' : 'am',
+        minutes = dtm.getMinutes().toString(),
+        month = strings.months[dtm.getMonth()],
+        date = dtm.getDate(),
+        year = dtm.getFullYear();
+
+    while (minutes.length < 2) {
+      minutes = '0' + minutes;
+    }
+
+    if (hours > 12) {
+      hours -= 12;
+    }
+
+    return {
+      date: [ month, ' ', date, ', ', year ].join(''),
+      time: [ hours, ':', minutes, ' ', period ].join('')
+    }
+  };
+
+  function init() {
+    displayHeader();
+    displayCourseSummary();
+    if (printOptions.bShowQuizReview) {
+      displayQuizResults();
+    }
+  }
+  init();
+}
+
+// use post message to allow this to work locally and in 360 review
+window.opener.postMessage('getQuizData', '*');
+
+window.addEventListener('message', function (e) {
+  setupPrint(JSON.parse(e.data));
+}, false);
+
+</script>
+
+</head>
+<body>
+  <div id="header"><div><h1>KNOWLEDGE CHECK: DESIGNING YOUR ENVIRONMENT</h1></div></div>
+  <p>&nbsp;</p>
+  <div id="courseSummary"><table class="summary" align="center"><tr><th>Date / Time</th><th>Student Score</th><th>Passing Score</th><th>Result</th></tr><tr><td><p class="datetime">July 9, 2020</p><p class="datetime">10:54 am</p></td><td>100</td><td>80</td><td>Pass</td></tr></table></div>
+  <p>&nbsp;</p>
+  <div id="quizReview"><div><h3>KNOWLEDGE CHECK: DESIGNING YOUR ENVIRONMENT</h3><table class="questions" id="results-6fjnWuZMDuV"><tr><th>#</th><th>Question</th><th>Correct Answer</th><th>Student Answer</th><th>Result</th><th>Points Awarded</th></tr><tr><td class="number">1</td><td class="question">As a best practice, it is recommended to start with how many Availability Zones per Region? </td><td>Two</td><td>Two</td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">2</td><td class="question">Which AWS service allows customers to centrally apply policy-based controls across multiple accounts within the AWS Cloud?</td><td>AWS Organizations </td><td>AWS Organizations </td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">3</td><td class="question">What are the benefits of AWS Organizations? Select two responses. </td><td>Helps you better manage budgetary, security, and compliance needs. , An account management service that consolidates all of your AWS accounts. </td><td>Helps you better manage budgetary, security, and compliance needs. , An account management service that consolidates all of your AWS accounts. </td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">4</td><td class="question">Which of the following statements describes a private subnet? Select two responses.</td><td>Does not have a routing table entry to an internet gateway., Is not directly accessible from the public internet. </td><td>Does not have a routing table entry to an internet gateway., Is not directly accessible from the public internet. </td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">5</td><td class="question">True or False? Most AWS services reside in the Virtual Private Cloud (VPC).</td><td>False</td><td>False</td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">6</td><td class="question">Which statements describe the reason why fewer subnets of larger sizes are preferred over higher numbers of subnets of smaller sizes? Select two responses.</td><td>Workload placement is simplified with fewer subnets., You are less likely to run out of IP addresses with fewer subnets.</td><td>Workload placement is simplified with fewer subnets., You are less likely to run out of IP addresses with fewer subnets.</td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">7</td><td class="question">What type of subnet is not connected to an internet gateway, but allows indirect access from the public internet via “jump boxes?”</td><td>Private</td><td>Private</td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">8</td><td class="question">True or False? Virtual private cloud (VPC) network address translation (NAT) gateways do not support port forwarding.</td><td>True</td><td>True</td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">9</td><td class="question">Which of the following statements are true about route tables? Select three responses.</td><td>Route tables can be shared between subnets., Each virtual private cloud (VPC) is given a route table by default when the VPC is created., Each subnet in a virtual private cloud (VPC) must be associated with a route table.</td><td>Route tables can be shared between subnets., Each virtual private cloud (VPC) is given a route table by default when the VPC is created., Each subnet in a virtual private cloud (VPC) must be associated with a route table.</td><td class="correct">Correct</td><td>10</td></tr><tr><td class="number">10</td><td class="question">True or false. A best practice is to use custom route tables for each subnet, which enables granular routing for destinations.</td><td>True</td><td>True</td><td class="correct">Correct</td><td>10</td></tr></table></div></div>
+
+
+</body></html>
